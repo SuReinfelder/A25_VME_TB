@@ -27,9 +27,9 @@
 ---------------------------------------------------------------
 --                         History                                    
 ---------------------------------------------------------------
--- $Revision: 1.3 $
+-- Revision 1.4  2017/06/13 07:00:00  mmiehling
+-- reworked comments in vme_dma_sram2a32d64
 --
--- $Log: terminal_pkg.vhd,v $
 -- Revision 1.3  2013/07/15 13:14:22  mmiehling
 -- adopted testcases
 --
@@ -124,17 +124,41 @@ PACKAGE terminal_pkg IS
 -- |   16z002-01 VME A32      |  8  |        0 | 20000000 |   3 |
 -- +--------------------------+-----+----------+----------+-----+
 
-  CONSTANT VME_REGS       : std_logic_vector(31 DOWNTO 0):=x"0001_0000" + BAR0;
-  CONSTANT VME_IACK       : std_logic_vector(31 DOWNTO 0):=x"0001_0100" + BAR0;
-  CONSTANT VME_A16D16     : std_logic_vector(31 DOWNTO 0):=x"0002_0000" + BAR0;
-  CONSTANT VME_A16D32     : std_logic_vector(31 DOWNTO 0):=x"0003_0000" + BAR0;
-  CONSTANT VME_A24D16     : std_logic_vector(31 DOWNTO 0):=x"0000_0000" + BAR2;
-  CONSTANT VME_A24D32     : std_logic_vector(31 DOWNTO 0):=x"0100_0000" + BAR2;
-  CONSTANT VME_CRCSR      : std_logic_vector(31 DOWNTO 0):=x"0000_0000" + BAR4;
-  CONSTANT VME_A32D32     : std_logic_vector(31 DOWNTO 0):=x"0000_0000" + BAR3;
+   CONSTANT VME_REGS       : std_logic_vector(31 DOWNTO 0):=x"0001_0000" + BAR0;
+   CONSTANT VME_IACK       : std_logic_vector(31 DOWNTO 0):=x"0001_0100" + BAR0;
+   CONSTANT VME_A16D16     : std_logic_vector(31 DOWNTO 0):=x"0002_0000" + BAR0;
+   CONSTANT VME_A16D32     : std_logic_vector(31 DOWNTO 0):=x"0003_0000" + BAR0;
+   CONSTANT VME_A24D16     : std_logic_vector(31 DOWNTO 0):=x"0000_0000" + BAR2;
+   CONSTANT VME_A24D32     : std_logic_vector(31 DOWNTO 0):=x"0100_0000" + BAR2;
+   CONSTANT VME_CRCSR      : std_logic_vector(31 DOWNTO 0):=x"0000_0000" + BAR4;
+   CONSTANT VME_A32D32     : std_logic_vector(31 DOWNTO 0):=x"0000_0000" + BAR3;
+   
+   CONSTANT SRAM           : std_logic_vector(31 DOWNTO 0):=x"0000_0000" + BAR1;
 
-  CONSTANT SRAM           : std_logic_vector(31 DOWNTO 0):=x"0000_0000" + BAR1;
+   CONSTANT DMA_VME_AM_A16D16_non   : std_logic_vector(4 downto 0):="00001";
+   CONSTANT DMA_VME_AM_A16D16_priv  : std_logic_vector(4 downto 0):="10001";
+   CONSTANT DMA_VME_AM_A16D32_non   : std_logic_vector(4 downto 0):="00101";
+   CONSTANT DMA_VME_AM_A16D32_priv  : std_logic_vector(4 downto 0):="10101";
 
+   CONSTANT DMA_VME_AM_A24D16_non   : std_logic_vector(4 downto 0):="00000";
+   CONSTANT DMA_VME_AM_A24D16_priv  : std_logic_vector(4 downto 0):="10000";
+   CONSTANT DMA_VME_AM_A24D32_non   : std_logic_vector(4 downto 0):="00100";
+   CONSTANT DMA_VME_AM_A24D32_priv  : std_logic_vector(4 downto 0):="10100";
+   CONSTANT DMA_VME_AM_A24D64_non   : std_logic_vector(4 downto 0):="01100";
+   CONSTANT DMA_VME_AM_A24D64_priv  : std_logic_vector(4 downto 0):="11100";
+   
+   CONSTANT DMA_VME_AM_A32D32_non   : std_logic_vector(4 downto 0):="00110";
+   CONSTANT DMA_VME_AM_A32D32_priv  : std_logic_vector(4 downto 0):="10110";
+   CONSTANT DMA_VME_AM_A32D64_non   : std_logic_vector(4 downto 0):="01110";
+   CONSTANT DMA_VME_AM_A32D64_priv  : std_logic_vector(4 downto 0):="11110";
+   
+   CONSTANT DMA_BLK           : std_logic:='0';
+   CONSTANT DMA_SGL           : std_logic:='1';
+   
+   CONSTANT DMA_DEVICE_SRAM   : std_logic_vector(2 downto 0):="001";
+   CONSTANT DMA_DEVICE_VME    : std_logic_vector(2 downto 0):="010";
+   CONSTANT DMA_DEVICE_PCI    : std_logic_vector(2 downto 0):="100";
+   
 
    TYPE terminal_in_type IS record
       done   : boolean;                           -- edge indicates end of transfer
@@ -290,7 +314,54 @@ PACKAGE terminal_pkg IS
                en_msg_0       : integer;
                err            : OUT natural
                );
+               
+   PROCEDURE vme_dma_am(   
+      SIGNAL   terminal_in_0  : IN terminal_in_type;
+      SIGNAL   terminal_out_0 : OUT terminal_out_type;
+      SIGNAL   terminal_in_1  : IN terminal_in_type;
+      SIGNAL   terminal_out_1 : OUT terminal_out_type;
+      SIGNAL   vme_slv_in     : OUT vme_slv_in_type;
+      SIGNAL   vme_slv_out    : IN vme_slv_out_type;
+      SIGNAL   irq_req        : IN std_logic_vector(16 DOWNTO 0);
+               en_msg_0       : integer;
+               err            : OUT natural
+               );
+               
+   PROCEDURE vme_dma_boundaries(   
+      SIGNAL   terminal_in_0  : IN terminal_in_type;
+      SIGNAL   terminal_out_0 : OUT terminal_out_type;
+      SIGNAL   terminal_in_1  : IN terminal_in_type;
+      SIGNAL   terminal_out_1 : OUT terminal_out_type;
+      SIGNAL   irq_req        : IN std_logic_vector(16 DOWNTO 0);
+               en_msg_0       : integer;
+               err            : OUT natural
+               );
 
+   PROCEDURE vme_dma_fifo(   
+      SIGNAL   terminal_in_0  : IN terminal_in_type;
+      SIGNAL   terminal_out_0 : OUT terminal_out_type;
+      SIGNAL   terminal_in_1  : IN terminal_in_type;
+      SIGNAL   terminal_out_1 : OUT terminal_out_type;
+      SIGNAL   irq_req        : IN std_logic_vector(16 DOWNTO 0);
+               en_msg_0       : integer;
+               err            : OUT natural
+               );
+
+   PROCEDURE vme_dma(   
+      SIGNAL   terminal_in_0  : IN terminal_in_type;
+      SIGNAL   terminal_out_0 : OUT terminal_out_type;
+      SIGNAL   irq_req        : IN std_logic_vector(16 DOWNTO 0);
+               size           : integer;                          -- number of longwords to be transmitted by DMA
+               src_adr        : std_logic_vector(31 downto 0);    -- DMA source address
+               dest_adr       : std_logic_vector(31 downto 0);    -- DMA destination address
+               vme_am         : std_logic_vector(4 downto 0);     -- address modifier bits of buffer descriptor
+               src_dev        : std_logic_vector(2 downto 0);     -- source device bits of buffer descriptor
+               dest_dev       : std_logic_vector(2 downto 0);     -- destination device bits of buffer descriptor
+               blk            : std_logic;                        -- block or single access
+               en_msg_0       : integer;
+               err            : OUT natural
+               );
+               
    PROCEDURE vme_slave_a242sram(   
       SIGNAL   terminal_in_0  : IN terminal_in_type;
       SIGNAL   terminal_out_0 : OUT terminal_out_type;
@@ -895,7 +966,7 @@ PACKAGE BODY terminal_pkg IS
       VARIABLE vme_ga_int : std_logic_vector(4 DOWNTO 0);
       VARIABLE vme_gap_int : std_logic;
    BEGIN
-      print("Test MEN_01A021_00_IT_xxxx: VME graphical address test");
+      print("Test vme_ga_test: VME graphical address test");
          -- reset value shall be 0x0
          rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_0050", x"0000_1e00", 1, en_msg_0, TRUE, "000001", loc_err);
          err_sum := err_sum + loc_err;
@@ -1106,6 +1177,1699 @@ PACKAGE BODY terminal_pkg IS
       WAIT FOR 500 ns;
       err := err_sum;
       print_err("vme_dma_sram2a24d32", err_sum);
+   END PROCEDURE;
+
+------------------------------------------------------------------------------------------
+   PROCEDURE vme_dma_am(   
+      SIGNAL   terminal_in_0  : IN terminal_in_type;
+      SIGNAL   terminal_out_0 : OUT terminal_out_type;
+      SIGNAL   terminal_in_1  : IN terminal_in_type;
+      SIGNAL   terminal_out_1 : OUT terminal_out_type;
+      SIGNAL   vme_slv_in     : OUT vme_slv_in_type;
+      SIGNAL   vme_slv_out    : IN vme_slv_out_type;
+      SIGNAL   irq_req        : IN std_logic_vector(16 DOWNTO 0);
+               en_msg_0       : integer;
+               err            : OUT natural
+               ) IS
+      VARIABLE loc_err : integer:=0;
+      VARIABLE err_sum : integer:=0;   
+      variable offset : std_logic_vector(11 downto 0);
+      variable size : integer;      -- number of longwords to be transmitted by DMA
+      variable am : std_logic_vector(5 downto 0);
+   BEGIN
+      -- checks all address modifiers possible by DMA transfer: A16, A24, A32, D16, D32, D64, supervisory, non-privilegded
+         size := 4;
+         -- set longadd
+--         wr32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_001c", x"0000_0001", 1, en_msg_0, TRUE, "000001");  				-- if generic USE_LONGADD=false
+--         rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_001c", x"0000_0001", 1, en_msg_0, TRUE, "000001", loc_err);
+         wr32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_001c", x"0000_0020", 1, en_msg_0, TRUE, "000001");  
+         rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_001c", x"0000_0020", 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- test data in sram
+         FOR i IN 0 TO size*4+1 LOOP
+            wr32(terminal_in_0, terminal_out_0, SRAM + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001");
+         END LOOP;
+
+      print_time("Test vme_dma_am: A24 Accesses");
+      -- A24_D16 supervisory BLT
+          print("Test vme_dma_am: VME DMA: SRAM TO VME A24D16 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0000",                 -- destination address
+               DMA_VME_AM_A24D16_priv,       -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0000", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D16 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0000",                 -- source address
+               x"0000_2000",                 -- destination address
+               DMA_VME_AM_A24D16_priv,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2000", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A24_D32 supervisory BLT
+          print("Test vme_dma_am: VME DMA: SRAM TO VME A24D32 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0100",                 -- destination address
+               DMA_VME_AM_A24D32_priv,       -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0100", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D16 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0100",                 -- source address
+               x"0000_2100",                 -- destination address
+               DMA_VME_AM_A24D32_priv,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2100", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A24_D16 supervisory
+          print("Test vme_dma_am: VME DMA: SRAM TO VME A24D16 supervisory with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0200",                 -- destination address
+               DMA_VME_AM_A24D16_priv,       -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0200", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D16 supervisory with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0200",                 -- source address
+               x"0000_2200",                 -- destination address
+               DMA_VME_AM_A24D16_priv,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2200", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+     -- A24_D32 supervisory
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A24D32 supervisory with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0300",                 -- destination address
+               DMA_VME_AM_A24D32_priv,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0300", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D32 supervisory with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0300",                 -- source address
+               x"0000_2300",                 -- destination address
+               DMA_VME_AM_A24D32_priv,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2300", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A24_D64 supervisory MBLT
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A24D64 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0400",                 -- destination address
+               DMA_VME_AM_A24D64_priv,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_MBLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0400", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D64 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0400",                 -- source address
+               x"0000_2400",                 -- destination address
+               DMA_VME_AM_A24D64_priv,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_SUPER_MBLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2400", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A24_D16 non-priviledged BLT
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A24D64 non-priviledged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0500",                 -- destination address
+               DMA_VME_AM_A24D16_non,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0500", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D64 non-priviledged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0500",                 -- source address
+               x"0000_2500",                 -- destination address
+               DMA_VME_AM_A24D16_non,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2500", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A24_D32 non-priviledged BLT
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A24D32 non-priviledged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0600",                 -- destination address
+               DMA_VME_AM_A24D32_non,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0600", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D32 non-priviledged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0600",                 -- source address
+               x"0000_2600",                 -- destination address
+               DMA_VME_AM_A24D32_non,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2600", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A24_D16 non-priviledged
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A24D16 non-privileged with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0700",                 -- destination address
+               DMA_VME_AM_A24D16_non,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0700", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D16 non-privileged with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0700",                 -- source address
+               x"0000_2700",                 -- destination address
+               DMA_VME_AM_A24D16_non,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2700", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A24_D32 non-priviledged
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A24D32 non-privileged with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0800",                 -- destination address
+               DMA_VME_AM_A24D32_non,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0800", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D32 non-privileged with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0800",                 -- source address
+               x"0000_2800",                 -- destination address
+               DMA_VME_AM_A24D32_non,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2800", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+      -- A24_D64 non-priviledged MBLT
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A24D64 non-privileged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0020_0900",                 -- destination address
+               DMA_VME_AM_A24D64_non,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_MBLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0900", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A24D32 non-privileged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0020_0900",                 -- source address
+               x"0000_2900",                 -- destination address
+               DMA_VME_AM_A24D64_non,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A24_NONPRIV_MBLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2900", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+    
+
+
+
+
+
+     print_time("Test vme_dma_am: A16 Accesses");
+
+     -- A16_D16 supervisory
+        print("Test vme_dma_am: VME DMA: SRAM TO VME A16D16 supervisory with single transfers");
+           vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+              size,                         -- data block size = 1 longword
+              x"0000_0000",                 -- source address
+              x"0000_1000",                 -- destination address
+              DMA_VME_AM_A16D16_priv,        -- vme address modifier 
+              DMA_DEVICE_SRAM,              -- source device
+              DMA_DEVICE_VME,               -- destination device
+              DMA_SGL,                      -- access type
+              en_msg_0, loc_err);
+           err_sum := err_sum + loc_err;
+           -- check vme address modifier used
+           am_vme_slv(vme_slv_in, vme_slv_out, am);
+           IF am /= AM_A16_SUPER THEN  
+              print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+              err_sum := err_sum + 1;
+           else
+              print_time("vme_dma_am: Checked AM => OK");
+           END IF;
+           -- check destination
+           rd32(terminal_in_0, terminal_out_0, VME_A16D32 + x"0000_1000", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+           err_sum := err_sum + loc_err;
+  
+        print("Test vme_dma_am: VME DMA: VME to SRAM A16D16 supervisory with single transfers");
+           vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+              size,                         -- data block size = 1 longword
+              x"0000_1000",                 -- source address
+              x"0000_2a00",                 -- destination address
+              DMA_VME_AM_A16D16_priv,        -- vme address modifier 
+              DMA_DEVICE_VME,               -- source device
+              DMA_DEVICE_SRAM,              -- destination device
+              DMA_SGL,                      -- access type
+              en_msg_0, loc_err);
+           err_sum := err_sum + loc_err;
+           -- check vme address modifier used
+           am_vme_slv(vme_slv_in, vme_slv_out, am);
+           IF am /= AM_A16_SUPER THEN  
+              print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+              err_sum := err_sum + 1;
+           else
+              print_time("vme_dma_am: Checked AM => OK");
+           END IF;
+           -- check destination
+           rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2a00", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+           err_sum := err_sum + loc_err;
+           
+     -- A16_D32 supervisory
+        print("Test vme_dma_am: VME DMA: SRAM TO VME A16D32 supervisory with single transfers");
+           vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+              size,                         -- data block size = 1 longword
+              x"0000_0000",                 -- source address
+              x"0000_1100",                 -- destination address
+              DMA_VME_AM_A16D32_priv,        -- vme address modifier 
+              DMA_DEVICE_SRAM,              -- source device
+              DMA_DEVICE_VME,               -- destination device
+              DMA_SGL,                      -- access type
+              en_msg_0, loc_err);
+           err_sum := err_sum + loc_err;
+           -- check vme address modifier used
+           am_vme_slv(vme_slv_in, vme_slv_out, am);
+           IF am /= AM_A16_SUPER THEN  
+              print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+              err_sum := err_sum + 1;
+           else
+              print_time("vme_dma_am: Checked AM => OK");
+           END IF;
+           -- check destination
+           rd32(terminal_in_0, terminal_out_0, VME_A16D32 + x"0000_1100", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+           err_sum := err_sum + loc_err;
+  
+        print("Test vme_dma_am: VME DMA: VME to SRAM A16D32 supervisory with single transfers");
+           vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+              size,                         -- data block size = 1 longword
+              x"0000_1100",                 -- source address
+              x"0000_2b00",                 -- destination address
+              DMA_VME_AM_A16D32_priv,        -- vme address modifier 
+              DMA_DEVICE_VME,               -- source device
+              DMA_DEVICE_SRAM,              -- destination device
+              DMA_SGL,                      -- access type
+              en_msg_0, loc_err);
+           err_sum := err_sum + loc_err;
+           -- check vme address modifier used
+           am_vme_slv(vme_slv_in, vme_slv_out, am);
+           IF am /= AM_A16_SUPER THEN  
+              print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+              err_sum := err_sum + 1;
+           else
+              print_time("vme_dma_am: Checked AM => OK");
+           END IF;
+           -- check destination
+           rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2b00", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+           err_sum := err_sum + loc_err;
+     
+     -- A16_D16 non-priviledged
+        print("Test vme_dma_am: VME DMA: SRAM TO VME A16D16 non-priviledged with single transfers");
+           vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+              size,                         -- data block size = 1 longword
+              x"0000_0000",                 -- source address
+              x"0000_1200",                 -- destination address
+              DMA_VME_AM_A16D16_non,        -- vme address modifier 
+              DMA_DEVICE_SRAM,              -- source device
+              DMA_DEVICE_VME,               -- destination device
+              DMA_SGL,                      -- access type
+              en_msg_0, loc_err);
+           err_sum := err_sum + loc_err;
+           -- check vme address modifier used
+           am_vme_slv(vme_slv_in, vme_slv_out, am);
+           IF am /= AM_A16_NONPRIV THEN  
+              print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+              err_sum := err_sum + 1;
+           else
+              print_time("vme_dma_am: Checked AM => OK");
+           END IF;
+           -- check destination
+           rd32(terminal_in_0, terminal_out_0, VME_A16D32 + x"0000_1200", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+           err_sum := err_sum + loc_err;
+  
+        print("Test vme_dma_am: VME DMA: VME to SRAM A16D16 non-priviledged with single transfers");
+           vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+              size,                         -- data block size = 1 longword
+              x"0000_1200",                 -- source address
+              x"0000_2c00",                 -- destination address
+              DMA_VME_AM_A16D16_non,        -- vme address modifier 
+              DMA_DEVICE_VME,               -- source device
+              DMA_DEVICE_SRAM,              -- destination device
+              DMA_SGL,                      -- access type
+              en_msg_0, loc_err);
+           err_sum := err_sum + loc_err;
+           -- check vme address modifier used
+           am_vme_slv(vme_slv_in, vme_slv_out, am);
+           IF am /= AM_A16_NONPRIV THEN  
+              print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+              err_sum := err_sum + 1;
+           else
+              print_time("vme_dma_am: Checked AM => OK");
+           END IF;
+           -- check destination
+           rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2c00", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+           err_sum := err_sum + loc_err;
+     
+      -- A16_D32 non-priviledged
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A16D32 non-priviledged with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"0000_1300",                 -- destination address
+               DMA_VME_AM_A16D32_non,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A16_NONPRIV THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A16D32 + x"0000_1300", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A16D32 non-priviledged with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_1300",                 -- source address
+               x"0000_2d00",                 -- destination address
+               DMA_VME_AM_A16D32_non,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A16_NONPRIV THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2d00", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+      
+      
+      
+       print_time("Test vme_dma_am: A32 Accesses");
+      -- A32_D32 supervisory BLT
+          print("Test vme_dma_am: VME DMA: SRAM TO VME A32D32 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"3000_0000",                 -- destination address
+               DMA_VME_AM_A32D32_priv,       -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_SUPER_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A32D32 + x"1000_0000", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A32D32 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"3000_0000",                 -- source address
+               x"0000_3000",                 -- destination address
+               DMA_VME_AM_A32D32_priv,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_SUPER_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_3000", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+     -- A32_D32 supervisory
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A32D32 supervisory with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"3000_0100",                 -- destination address
+               DMA_VME_AM_A32D32_priv,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_SUPER_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A32D32 + x"1000_0100", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A32D32 supervisory with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"3000_0100",                 -- source address
+               x"0000_3100",                 -- destination address
+               DMA_VME_AM_A32D32_priv,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_SUPER_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_3100", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A32_D64 supervisory MBLT
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A32D64 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"3000_0200",                 -- destination address
+               DMA_VME_AM_A32D64_priv,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_SUPER_MBLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A32D32 + x"1000_0200", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A32D64 supervisory with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"3000_0200",                 -- source address
+               x"0000_3200",                 -- destination address
+               DMA_VME_AM_A32D64_priv,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_SUPER_MBLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_3200", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A32_D32 non-priviledged BLT
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A32D32 non-priviledged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"3000_0300",                 -- destination address
+               DMA_VME_AM_A32D32_non,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_NONPRIV_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A32D32 + x"1000_0300", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A32D32 non-priviledged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"3000_0300",                 -- source address
+               x"0000_3300",                 -- destination address
+               DMA_VME_AM_A32D32_non,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_NONPRIV_BLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_3300", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+      -- A32_D32 non-priviledged
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A32D32 non-privileged with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"3000_0400",                 -- destination address
+               DMA_VME_AM_A32D32_non,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_NONPRIV_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A32D32 + x"1000_0400", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A32D32 non-privileged with single transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"3000_0400",                 -- source address
+               x"0000_3400",                 -- destination address
+               DMA_VME_AM_A32D32_non,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_SGL,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_NONPRIV_DAT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_3400", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+      -- A32_D64 non-priviledged MBLT
+         print("Test vme_dma_am: VME DMA: SRAM TO VME A32D64 non-privileged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"0000_0000",                 -- source address
+               x"3000_0600",                 -- destination address
+               DMA_VME_AM_A32D64_non,        -- vme address modifier 
+               DMA_DEVICE_SRAM,              -- source device
+               DMA_DEVICE_VME,               -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_NONPRIV_MBLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, VME_A32D32 + x"1000_0600", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+   
+         print("Test vme_dma_am: VME DMA: VME to SRAM A32D32 non-privileged with block transfers");
+            vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+               size,                         -- data block size = 1 longword
+               x"3000_0600",                 -- source address
+               x"0000_3600",                 -- destination address
+               DMA_VME_AM_A32D64_non,        -- vme address modifier 
+               DMA_DEVICE_VME,               -- source device
+               DMA_DEVICE_SRAM,              -- destination device
+               DMA_BLK,                      -- access type
+               en_msg_0, loc_err);
+            err_sum := err_sum + loc_err;
+            -- check vme address modifier used
+            am_vme_slv(vme_slv_in, vme_slv_out, am);
+            IF am /= AM_A32_NONPRIV_MBLT THEN  
+               print_now_s_hb   ("ERROR vme_dma_am: wrong address modifier used! am = ", ("00" & am));
+               err_sum := err_sum + 1;
+            else
+               print_time("vme_dma_am: Checked AM => OK");
+            END IF;
+            -- check destination
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_3600", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+
+
+
+         err := err_sum;
+         print_err("vme_dma_am", err_sum);
+   END PROCEDURE;
+
+------------------------------------------------------------------------------------------
+   PROCEDURE vme_dma_boundaries(   
+      SIGNAL   terminal_in_0  : IN terminal_in_type;
+      SIGNAL   terminal_out_0 : OUT terminal_out_type;
+      SIGNAL   terminal_in_1  : IN terminal_in_type;
+      SIGNAL   terminal_out_1 : OUT terminal_out_type;
+      SIGNAL   irq_req        : IN std_logic_vector(16 DOWNTO 0);
+               en_msg_0       : integer;
+               err            : OUT natural
+               ) IS
+      VARIABLE loc_err : integer:=0;
+      VARIABLE err_sum : integer:=0;   
+      variable offset : std_logic_vector(11 downto 0);
+      variable size : integer;      -- number of longwords to be transmitted by DMA
+   BEGIN
+      print("Preliminaries to test vme_dma_boundaries, testing data in SRAM");
+         size := 64; --257
+         -- test data in sram
+         FOR i IN 0 TO size*4+1 LOOP
+            wr32(terminal_in_0, terminal_out_0, SRAM + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001");
+         END LOOP;
+
+      print("Test vme_dma_boundaries: VME DMA: SRAM TO VME with size of 4 bytes ");
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            1,                         -- data block size = 1 longword
+            x"0000_0000",                 -- source address
+            x"0020_0000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+
+      print("Test vme_dma_boundaries: VME DMA: VME to SRAM with size of 4 bytes ");
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            1,                         -- data block size = 1 longword
+            x"0020_0000",                 -- source address
+            x"0000_2000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+
+         -- check destination
+         rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0000", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+         rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2000", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+
+         rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_002c", x"0000_0000", 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+         wr32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_002c", x"0000_000c", 1, en_msg_0, TRUE, "000001");          -- clear dma err
+         rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_002c", x"0000_0000", 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+
+      print("Test vme_dma_boundaries: VME DMA: SRAM TO VME with size of 0x404 longwords at offset 0x4");
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0000",                 -- source address
+            x"0020_0004",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_0004",                 -- source address
+            x"0000_1000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0004" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0004" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_1000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_1000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+
+     print("Test vme_dma_boundaries: VME DMA: SRAM TO VME AND back with size of 256 bytes (exactly as large as boundary)");
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0000",                 -- source address
+            x"0020_0000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_0000",                 -- source address
+            x"0000_1000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_1000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_1000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+      print("Test vme_dma_boundaries: VME DMA: SRAM TO VME AND back with crossing boundary by one access");
+         size := 9;
+         print_s_i ("Size in byte = ", size*4);
+         offset := x"0e0";
+         print_s_std ("Offset address = 0x", offset);
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0" & offset,           -- source address
+            x"0020_1" & offset,           -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_1" & offset,           -- source address     
+            x"0000_2" & offset,           -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_1" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_1" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_2" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_2" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+      print("Test vme_dma_boundaries: VME DMA: SRAM TO VME AND back with crossing boundary by two access");
+         size := 9;
+         print_s_i ("Size in byte = ", size*4);
+         offset := x"0e4";
+         print_s_std ("Offset address = 0x", offset);
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0" & offset,           -- source address     
+            x"0020_2" & offset,           -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_2" & offset,           -- source address     
+            x"0000_3" & offset,           -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_2" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_2" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_3" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_3" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+      print("Test vme_dma_boundaries: VME DMA: SRAM TO VME AND back with crossing boundary by three access");
+         size := 9;
+         print_s_i ("Size in byte = ", size*4);
+         offset := x"0e8";
+         print_s_std ("Offset address = 0x", offset);
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0" & offset,           -- source address     
+            x"0020_3" & offset,           -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_3" & offset,           -- source address     
+            x"0000_4" & offset,           -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_3" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_3" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_4" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_4" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+      print("Test vme_dma_boundaries: VME DMA: SRAM TO VME AND back with crossing after one access");
+         size := 9;
+         print_s_i ("Size in byte = ", size*4);
+         offset := x"0fc";
+         print_s_std ("Offset address = 0x", offset);
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0" & offset,           -- source address       
+            x"0020_4" & offset,           -- destination address  
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_4" & offset,           -- source address       
+            x"0000_5" & offset,           -- destination address  
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_4" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_4" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_5" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_5" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+      print("Test vme_dma_boundaries: VME DMA: SRAM TO VME AND back with crossing after two accesses");
+         size := 9;
+         print_s_i ("Size in byte = ", size*4);
+         offset := x"0f8";
+         print_s_std ("Offset address = 0x", offset);
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0" & offset,           -- source address       
+            x"0020_5" & offset,           -- destination address  
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_5" & offset,           -- source address       
+            x"0000_6" & offset,           -- destination address  
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_5" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_5" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_6" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_6" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+      print("Test vme_dma_boundaries: VME DMA: SRAM TO VME AND back with crossing after three accesses");
+         size := 9;
+         print_s_i ("Size in byte = ", size*4);
+         offset := x"0f4";
+         print_s_std ("Offset address = 0x", offset);
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0" & offset,           -- source address       
+            x"0020_6" & offset,           -- destination address  
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_6" & offset,           -- source address       
+            x"0000_7" & offset,           -- destination address  
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_6" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + (x"0020_6" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_7" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + (x"0000_7" & offset) + (4*i), (x"00000" & offset) + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+
+         err := err_sum;
+         print_err("vme_dma_boundaries", err_sum);
+   END PROCEDURE;
+
+------------------------------------------------------------------------------------------
+   PROCEDURE vme_dma_fifo(   
+      SIGNAL   terminal_in_0  : IN terminal_in_type;
+      SIGNAL   terminal_out_0 : OUT terminal_out_type;
+      SIGNAL   terminal_in_1  : IN terminal_in_type;
+      SIGNAL   terminal_out_1 : OUT terminal_out_type;
+      SIGNAL   irq_req        : IN std_logic_vector(16 DOWNTO 0);
+               en_msg_0       : integer;
+               err            : OUT natural
+               ) IS
+      VARIABLE loc_err : integer:=0;
+      VARIABLE err_sum : integer:=0;   
+      variable offset : std_logic_vector(11 downto 0);
+      variable size : integer;      -- number of longwords to be transmitted by DMA
+      constant CONST_FIFO_SIZE   : integer := 256;
+   BEGIN
+         size := CONST_FIFO_SIZE; 
+         -- test data in sram
+         FOR i IN 0 TO size*4+1 LOOP
+            wr32(terminal_in_0, terminal_out_0, SRAM + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001");
+         END LOOP;
+
+      print("Test vme_dma_fifo: SRAM TO VME AND back with size of fifo depth");
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0000",                 -- source address
+            x"0020_0000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_0000",                 -- source address
+            x"0000_1000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_0000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_1000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_1000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+ 
+      print("Test vme_dma_fifo: SRAM TO VME AND back with size of fifo depth +1");
+         size := CONST_FIFO_SIZE+1; 
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0000",                 -- source address
+            x"0020_1000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_1000",                 -- source address
+            x"0000_2000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_1000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_1000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_2000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+      print("Test vme_dma_fifo: SRAM TO VME AND back with size of fifo depth +2");
+         size := CONST_FIFO_SIZE+2; 
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0000_0000",                 -- source address
+            x"0020_2000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_SRAM,              -- source device
+            DMA_DEVICE_VME,               -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+
+         vme_dma(terminal_in_0, terminal_out_0, irq_req, 
+            size,                         -- data block size in longword -1
+            x"0020_2000",                 -- source address
+            x"0000_3000",                 -- destination address
+            DMA_VME_AM_A24D32_non,        -- vme address modifier 
+            DMA_DEVICE_VME,               -- source device
+            DMA_DEVICE_SRAM,              -- destination device
+            DMA_BLK,                      -- block access
+            en_msg_0, loc_err);
+         err_sum := err_sum + loc_err;
+         
+         -- check destination VME_A24D32
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_2000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, VME_A24D32 + x"0020_2000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         -- check destination SRAM
+         FOR i IN 0 TO 2 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_3000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+         FOR i IN size-2 TO size-1 LOOP
+            rd32(terminal_in_0, terminal_out_0, SRAM + x"0000_3000" + (4*i), x"00000000" + (4*i), 1, en_msg_0, TRUE, "000001", loc_err);
+            err_sum := err_sum + loc_err;
+         END LOOP;
+
+
+         err := err_sum;
+         print_err("vme_dma_fifo", err_sum);
+   END PROCEDURE;
+
+
+------------------------------------------------------------------------------------------
+   PROCEDURE vme_dma (   
+      SIGNAL   terminal_in_0  : IN terminal_in_type;
+      SIGNAL   terminal_out_0 : OUT terminal_out_type;
+      SIGNAL   irq_req        : IN std_logic_vector(16 DOWNTO 0);
+               size           : integer;                          -- number of longwords to be transmitted by DMA
+               src_adr        : std_logic_vector(31 downto 0);    -- DMA source address
+               dest_adr       : std_logic_vector(31 downto 0);    -- DMA destination address
+               vme_am         : std_logic_vector(4 downto 0);     -- address modifier bits of buffer descriptor
+               src_dev        : std_logic_vector(2 downto 0);     -- source device bits of buffer descriptor
+               dest_dev       : std_logic_vector(2 downto 0);     -- destination device bits of buffer descriptor
+               blk            : std_logic;                        -- block(0) or single(1) access
+               en_msg_0       : integer;
+               err            : OUT natural
+               ) IS
+      VARIABLE loc_err : integer:=0;
+      VARIABLE err_sum : integer:=0;   
+      variable bd_0xc : std_logic_vector(31 downto 0);
+      variable var_msi_expected  : std_logic_vector(31 downto 0) := (others => '0');
+      variable var_success       : boolean := false;
+      variable var_msi_allocated : std_logic_vector(2 downto 0) := (others => '0');
+      variable var_check_msi_nbr : natural := 0;
+      constant MSI_SHMEM_ADDR    : natural := 2096896; -- := x"1FFF00" at upper end of shared memory
+      constant MSI_DATA_VAL      : std_logic_vector(15 downto 0) := x"3210";
+   BEGIN
+      var_success := false;
+      bfm_configure_msi(
+         msi_addr       => MSI_SHMEM_ADDR,
+         msi_data       => MSI_DATA_VAL,
+         msi_allocated  => var_msi_allocated,
+         success        => var_success
+      );
+      if not var_success then 
+         err_sum := err_sum +1;
+         if en_msg_0 >= 1 then 
+            print_now("ERROR(vme_dma_sram2a24d32): error while executing bfm_configure_msi() - MSI NOT configured, MSI behavior is UNDEFINED!");
+            print("   ---> test case skipped");
+         end if;
+      else
+         if en_msg_0 > 0 then
+            print_now  ("VME DMA access");
+            print_s_std("   Source Address      = ", src_adr);
+            if src_dev = "001" then
+               print   ("   Source Device       = SRAM");
+            elsif src_dev = "010" then
+               print   ("   Source Device       = VME");
+            elsif src_dev = "100" then
+               print   ("   Source Device       = PCI");
+            else
+                print  ("   Source Device       = unknown");
+            end if;
+            print_s_std("   Destination Address = ", dest_adr);
+            if dest_dev = "001" then
+               print   ("   Destination Device  = SRAM");
+            elsif dest_dev = "010" then
+               print   ("   Destination Device  = VME");
+            elsif dest_dev = "100" then
+               print   ("   Destination Device  = PCI");
+            else
+                print  ("   Destination Device  = unknown");
+            end if;
+            --print_s_i  ("   Size in Byte        = ", (size-1)*4);
+            print_s_i  ("   Size in Byte        = ", size*4);
+         end if;
+               
+         bd_0xc := "0000000000000" & src_dev & '0' & dest_dev & "000" & vme_am & blk & "001";
+         -- config buffer descriptor 
+         wr32(terminal_in_0, terminal_out_0, SRAM + x"000F_F900", dest_adr, 1, 0, TRUE, "000001");  -- dest adr
+         rd32(terminal_in_0, terminal_out_0, SRAM + x"000F_F900", dest_adr, 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+         wr32(terminal_in_0, terminal_out_0, SRAM + x"000F_F904", src_adr, 1, 0, TRUE, "000001");  -- source adr
+         rd32(terminal_in_0, terminal_out_0, SRAM + x"000F_F904", src_adr, 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+         --wr32(terminal_in_0, terminal_out_0, SRAM + x"000F_F908", x"0000_0000" + size-1, 1, 0, TRUE, "000001");  -- size
+         wr32(terminal_in_0, terminal_out_0, SRAM + x"000F_F908", x"0000_0000" + size, 1, 0, TRUE, "000001");  -- size
+         --rd32(terminal_in_0, terminal_out_0, SRAM + x"000F_F908", x"0000_0000" + size-1, 1, en_msg_0, TRUE, "000001", loc_err);
+         rd32(terminal_in_0, terminal_out_0, SRAM + x"000F_F908", x"0000_0000" + size, 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+         wr32(terminal_in_0, terminal_out_0, SRAM + x"000F_F90c", bd_0xc, 1, 0, TRUE, "000001");  
+         rd32(terminal_in_0, terminal_out_0, SRAM + x"000F_F90c", bd_0xc, 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+   
+         wr32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_002c", x"0000_0003", 1, 0, TRUE, "000001");  -- start transfer
+         rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_002c", x"0000_0003", 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+      
+         var_check_msi_nbr := 9;
+         bfm_calc_msi_expected(
+            msi_allocated => var_msi_allocated,
+            msi_data      => MSI_DATA_VAL,
+            msi_nbr       => var_check_msi_nbr,
+            msi_expected  => var_msi_expected
+         );
+         var_success := false;
+         bfm_poll_msi(
+            track_msi    => 1,
+            msi_addr     => MSI_SHMEM_ADDR,
+            msi_expected => var_msi_expected,
+            txt_out      => en_msg_0,
+            success      => var_success
+         );
+         if not var_success then 
+            err_sum := err_sum +1;
+            if en_msg_0 >= 1 then print_now("ERROR(vme_dma_sram2a24d32): error while executing bfm_poll_msi()"); end if;
+         end if;
+
+         IF irq_req(13) = '0' THEN  
+            print_time("ERROR vme_dma: dma irq NOT asserted");
+         END IF;
+
+         -- clear irq request
+         wr32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_002c", x"0000_0004", 1, 0, TRUE, "000001");
+         IF irq_req(13) = '1' THEN  
+            print_time("ERROR vme_dma: dma irq asserted");
+         END IF;
+         -- check control reg for end of dma
+         rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_002c", x"0000_0000", 1, en_msg_0, TRUE, "000001", loc_err);
+         err_sum := err_sum + loc_err;
+      end if;
+      WAIT FOR 500 ns;
+
+      err := err_sum;
+      print_err("vme_dma", err_sum);
    END PROCEDURE;
 
 ----------------------------------------------------------------------------------------------
@@ -1701,7 +3465,7 @@ PACKAGE BODY terminal_pkg IS
       VARIABLE dat     : std_logic_vector(31 DOWNTO 0);
    BEGIN
       print("Test MEN_01A021_00_IT_0210: Chameleon Table");
-      rd32(terminal_in_0, terminal_out_0, BAR0 + x"0000_0000", x"00054102", 1, en_msg_0, TRUE, "000001", loc_err); 
+      rd32(terminal_in_0, terminal_out_0, BAR0 + x"0000_0000", x"00014103", 1, en_msg_0, TRUE, "000001", loc_err); 
       rd32(terminal_in_0, terminal_out_0, BAR0 + x"0000_0004", x"0000abce", 1, en_msg_0, TRUE, "000001", loc_err); 
       rd32(terminal_in_0, terminal_out_0, BAR0 + x"0000_0008", x"00000000", 1, en_msg_0, TRUE, "000001", loc_err); 
       rd32(terminal_in_0, terminal_out_0, BAR0 + x"0000_000c", x"32304100", 1, en_msg_0, TRUE, "000001", loc_err); 
@@ -2967,7 +4731,9 @@ PACKAGE BODY terminal_pkg IS
          rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_0010", x"0000_0008", 1, en_msg_0, TRUE, "000001", loc_err);
          err_sum := err_sum + loc_err;
 
-         print (" VME A16/D16 single access");
+
+
+         print (" VME A16/D16 single read access");
          rd32(terminal_in_0, terminal_out_0, VME_A16D16 + x"0000_0000", x"0000_ffff", 1, en_msg_0, FALSE, "000001", loc_err);
          --wait_on_irq_assert(0);
          bfm_calc_msi_expected(
@@ -3003,8 +4769,9 @@ PACKAGE BODY terminal_pkg IS
          rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_0010", x"0000_0008", 1, en_msg_0, TRUE, "000001", loc_err);
          err_sum := err_sum + loc_err;
        
+       
          
-         print (" VME A24/D16 single access");
+         print (" VME A24/D16 single read access");
          rd32(terminal_in_0, terminal_out_0, VME_A24D16 + x"0000_0000", x"0000_ffff", 1, en_msg_0, FALSE, "000001", loc_err);
          --wait_on_irq_assert(0);
          bfm_calc_msi_expected(
@@ -3040,7 +4807,9 @@ PACKAGE BODY terminal_pkg IS
          rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_0010", x"0000_0008", 1, en_msg_0, TRUE, "000001", loc_err);
          err_sum := err_sum + loc_err;
 
-         print (" VME A32/D32 single access");
+
+
+         print (" VME A32/D32 single read access");
          rd32(terminal_in_0, terminal_out_0, VME_A32D32 + x"0000_0000", x"ffff_ffff", 1, en_msg_0, FALSE, "000001", loc_err);
          --wait_on_irq_assert(0);
          bfm_calc_msi_expected(
@@ -3076,7 +4845,9 @@ PACKAGE BODY terminal_pkg IS
          rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_0010", x"0000_0008", 1, en_msg_0, TRUE, "000001", loc_err);
          err_sum := err_sum + loc_err;
 
-         print (" VME DMA");
+
+
+         print (" VME DMA A24/D32 read access");
          wr32(terminal_in_0, terminal_out_0, SRAM + x"000F_F900", x"0000_0000", 1, en_msg_0, TRUE, "000001");  -- dest adr
          rd32(terminal_in_0, terminal_out_0, SRAM + x"000F_F900", x"0000_0000", 1, en_msg_0, TRUE, "000001", loc_err);
          err_sum := err_sum + loc_err;
@@ -3092,6 +4863,7 @@ PACKAGE BODY terminal_pkg IS
          print(" start DMA transfer");
          wr32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_002c", x"0000_0003", 1, en_msg_0, TRUE, "000001");  -- start transfer
 
+         -- check for DMA interrupt
          --wait_on_irq_assert(0);
          bfm_calc_msi_expected(
             msi_allocated => var_msi_allocated,
@@ -3115,8 +4887,33 @@ PACKAGE BODY terminal_pkg IS
          IF irq_req(irq_req_dma) = '0' THEN  
             print_time("ERROR vme_dma_sram2pci: dma irq NOT asserted");
          END IF;
+
+         -- check for buserror interrupt
+         bfm_calc_msi_expected(
+            msi_allocated => var_msi_allocated,
+            msi_data      => MSI_DATA_VAL,
+            msi_nbr       => irq_req_berr,
+            msi_expected  => var_msi_expected
+         );
+         var_success := false;
+         bfm_poll_msi(
+            track_msi    => 1,
+            msi_addr     => MSI_SHMEM_ADDR,
+            msi_expected => var_msi_expected,
+            txt_out      => en_msg_0,
+            success      => var_success
+         );
+         if not var_success then 
+            err_sum := err_sum +1;
+            if en_msg_0 >= 1 then print_now("ERROR(vme_buserror): error while executing bfm_poll_msi()"); end if;
+         end if;
+
+         IF irq_req(irq_req_berr) = '0' THEN  
+            print_time("ERROR vme_dma_sram2pci: buserror irq NOT asserted");
+         END IF;
+
          WAIT FOR 1 us;
-         rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_0010", x"0000_0008", 1, en_msg_0, TRUE, "000001", loc_err);
+         rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_0010", x"0000_000c", 1, en_msg_0, TRUE, "000001", loc_err);
          err_sum := err_sum + loc_err;
          rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_002c", x"0000_001e", 1, en_msg_0, TRUE, "000001", loc_err);
          err_sum := err_sum + loc_err;
@@ -3124,6 +4921,9 @@ PACKAGE BODY terminal_pkg IS
          wr32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_0010", x"0000_000c", 1, en_msg_0, TRUE, "000001");
          --wait_on_irq_deassert(0);
          IF irq_req(irq_req_dma) = '1' THEN  
+            print_time("ERROR vme_dma_sram2pci: dma irq asserted");
+         END IF;
+         IF irq_req(irq_req_berr) = '1' THEN  
             print_time("ERROR vme_dma_sram2pci: dma irq asserted");
          END IF;
          rd32(terminal_in_0, terminal_out_0, VME_REGS + x"0000_0010", x"0000_0008", 1, en_msg_0, TRUE, "000001", loc_err);

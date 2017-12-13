@@ -46,6 +46,7 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE ieee.std_logic_unsigned.ALL;
+USE ieee.numeric_std.ALL;
 USE work.wb_pkg.ALL;
 USE work.fpga_pkg_2.ALL;
 USE work.z126_01_pkg.ALL;
@@ -549,6 +550,36 @@ PORT (
      );
 END COMPONENT;
 
+   function f_sel_pcie_lanes(simulation : boolean)
+     return std_logic_vector is
+   begin
+     if (simulation) then
+       return "001"; -- x1 for simulation
+     else
+       return "100"; -- x4 for synthesis
+     end if;
+   end function;
+
+   function f_sel_cham_hex(simulation : boolean)
+     return string is
+   begin
+     if (simulation) then
+       return "../../A25_VME/Source/chameleon.hex";
+     else
+       return "../Source/chameleon.hex";
+     end if;
+   end function;
+
+   function f_sel_sim_bool(simulation : boolean)
+     return std_logic is
+   begin
+     if (simulation) then
+       return '1';
+     else
+       return '0';
+     end if;
+   end function;
+   
    CONSTANT CONST_500HZ : integer := 66667; -- half 500Hz clock period counter value at 66MHz
 
    SIGNAL sys_clk       : std_logic;                        -- system clock 66 MHz
@@ -558,6 +589,7 @@ END COMPONENT;
    SIGNAL clk_50        : std_logic;                        -- 50 MHz clock for reconfig_clk and cal_blk_clk
    SIGNAL clk_125       : std_logic;                        -- 125 MHz clock for fixed_clk
    SIGNAL clk_500       : std_logic;                        -- 500 Hz clock
+   --SIGNAL cnt_500hz     : unsigned(16 downto 0);
    SIGNAL cnt_500hz     : integer;
 
    -- MASTER SIGNALS
@@ -715,9 +747,12 @@ BEGIN
    PROCESS(sys_clk, sys_rst)
    BEGIN
       IF sys_rst = '1' THEN
+         --cnt_500hz <= (others => '0');
          cnt_500hz <= 0;
          clk_500 <= '0';
       ELSIF sys_clk'EVENT AND sys_clk = '1' THEN
+         --IF cnt_500hz = to_unsigned(0, cnt_500hz'length) THEN 
+            --cnt_500hz <= to_unsigned(CONST_500HZ, cnt_500hz'length);
          IF cnt_500hz = 0 THEN 
             cnt_500hz <= CONST_500HZ;
             clk_500 <= NOT clk_500;
@@ -743,7 +778,7 @@ pll: pll_pcie
    wbmo_0_cyc <=                                      -- +-Module Name--------------+-cyc-+---offset-+-----size-+-bar-+ 
       "0001" WHEN wbmo_0_cyc_int(0) = '1' ELSE        -- |     Chameleon Table      |  0  |        0 |      200 |   0 | 
       "0010" WHEN wbmo_0_cyc_int(1) = '1' ELSE        -- |     16Z126_SERFLASH      |  1  |      200 |       20 |   0 |  
-      "0100" WHEN wbmo_0_cyc_int(2) = '1' ELSE        -- |       16z002-01 VME      |  2  |    10000 |    10000 |   0 |
+      "0100" WHEN wbmo_0_cyc_int(2) = '1' ELSE        -- |       16z002-01 VME      |  2  |    10000 |      200 |   0 |
       "0100" WHEN wbmo_0_cyc_int(3) = '1' ELSE        -- |16z002-01 VME A16D16      |  3  |    20000 |    10000 |   0 |
       "0100" WHEN wbmo_0_cyc_int(4) = '1' ELSE        -- |16z002-01 VME A16D32      |  4  |    30000 |    10000 |   0 |
       "1000" WHEN wbmo_0_cyc_int(5) = '1' ELSE        -- |  16z002-01 VME SRAM      |  5  |        0 |   100000 |   1 | 
@@ -763,7 +798,7 @@ pll: pll_pcie
       CONST_VME_A16D32  WHEN wbmo_0_cyc_int(4) = '1' ELSE      -- |16z002-01 VME A16D32      |  4  |    30000 |    10000 |   0 | 
       CONST_VME_IACK    WHEN wbmo_0_cyc_int(2) = '1'                                              
                             AND wbmo_0.adr(8) = '1' ELSE       -- |16z002-01 VME IACK        |  2  |    10100 |       10 |   0 |
-      CONST_VME_REGS    WHEN wbmo_0_cyc_int(2) = '1' ELSE      -- |16z002-01 VME REGS        |  2  |    10000 |    10000 |   0 |
+      CONST_VME_REGS    WHEN wbmo_0_cyc_int(2) = '1' ELSE      -- |16z002-01 VME REGS        |  2  |    10000 |      100 |   0 |
       CONST_VME_A32D32  WHEN wbmo_0_cyc_int(8) = '1' ELSE      -- |16z002-01 VME A32         |  8  |        0 | 20000000 |   3 |
       CONST_VME_A24D32  WHEN wbmo_0_cyc_int(7) = '1' ELSE      -- |16z002-01 VME A24D32      |  7  |  1000000 |  1000000 |   2 |
       CONST_VME_CRCSR   WHEN wbmo_0_cyc_int(9) = '1' ELSE      -- |16z002-01 VME CRCSR       |  9  |        0 |  1000000 |   4 |
@@ -949,7 +984,7 @@ pcie: ip_16z091_01_top
 
 sflash: z126_01_top 
    GENERIC MAP (
-      SIMULATION              => true,
+      SIMULATION              => SIMULATION, --true,
       FPGA_FAMILY             => CYCLONE4,
       FLASH_TYPE              => M25P32,
       USE_DIRECT_INTERFACE    => FALSE,
@@ -964,7 +999,7 @@ sflash: z126_01_top
       rst_dir                 => sys_rst,      
       clk_indi                => sys_clk, 
       rst_indi                => sys_rst, 
-      board_status            => board_status,
+      board_status            => open, --board_status,
       wbs_stb_dir             => '0',            
       wbs_ack_dir             => OPEN,           
       wbs_we_dir              => '0',            
@@ -1005,7 +1040,7 @@ PORT MAP (
    mailbox_irq       => mailbox_irq,
    dma_irq           => dma_irq ,
 	prevent_sysrst    => '0',
-   test_vec          => test_vec,
+   test_vec          => open, --test_vec,
 
    -- vmectrl slave
    wbs_stb_i         => wbsi_2.stb,
